@@ -1,0 +1,927 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Travel Weather Advisor</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Design tokens ───────────────────────────────── */
+    :root {
+      --navy:        #07111f;
+      --navy-mid:    #0d1f35;
+      --blue:        #1d4ed8;
+      --sky:         #38bdf8;
+      --indigo:      #4f46e5;
+      --surface:     #ffffff;
+      --surface-2:   #f5f7fa;
+      --border:      #e5e9f0;
+      --text:        #0f172a;
+      --muted:       #64748b;
+      --r:           14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #ffffff;
+      color: var(--text);
+      margin: 0;
+    }
+
+    /* ── Navbar ──────────────────────────────────────── */
+    .app-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(7, 17, 31, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 0.9rem 0;
+    }
+    .nav-brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-brand .brand-dot { color: var(--sky); }
+    .nav-chip {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+
+    /* ── Hero ────────────────────────────────────────── */
+    .hero {
+      background: var(--navy);
+      padding: 6rem 0 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Atmospheric glows — no patterns */
+    .hero-glow-1 {
+      position: absolute;
+      top: -120px; left: -80px;
+      width: 560px; height: 560px;
+      background: radial-gradient(circle, rgba(29,78,216,0.35) 0%, transparent 68%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-glow-2 {
+      position: absolute;
+      bottom: -160px; right: -60px;
+      width: 480px; height: 480px;
+      background: radial-gradient(circle, rgba(56,189,248,0.18) 0%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-glow-3 {
+      position: absolute;
+      top: 40%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px; height: 300px;
+      background: radial-gradient(ellipse, rgba(79,70,229,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sky);
+      border: 1px solid rgba(56,189,248,0.3);
+      border-radius: 999px;
+      padding: 4px 12px;
+      margin-bottom: 1.25rem;
+    }
+    .hero-title {
+      font-size: clamp(2rem, 5.5vw, 3.25rem);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.8px;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .hero-title em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--sky), #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      color: rgba(255,255,255,0.58);
+      font-size: 1rem;
+      line-height: 1.7;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    /* ── Form card ───────────────────────────────────── */
+    .form-card {
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        0 32px 80px rgba(0,0,0,0.28),
+        0 8px 24px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    .form-card-header {
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .form-card-body { padding: 1.75rem; }
+
+    .field-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field-input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .field-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(29,78,216,0.12);
+    }
+    .field-input::placeholder { color: #b0bac7; }
+
+    .btn-forecast {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.8rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-forecast:hover:not(:disabled) {
+      background: #1e40af;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(29,78,216,0.4);
+    }
+    .btn-forecast:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    .error-pill {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      background: #fff5f5;
+      border: 1px solid #fdb5b5;
+      border-radius: 10px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.85rem;
+      color: #c0392b;
+    }
+
+    /* ── Results section ─────────────────────────────── */
+    .results-wrap {
+      background: var(--surface-2);
+      padding: 4rem 0 5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Destination header */
+    .dest-header {
+      margin-bottom: 2.5rem;
+    }
+    .dest-city {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .dest-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.83rem;
+      color: var(--muted);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 14px;
+    }
+    .dest-location {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Metric cards ────────────────────────────────── */
+    .metric-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.4rem 1.5rem;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .metric-card:hover {
+      box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    .metric-icon-wrap {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .metric-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .metric-value {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Temperature bar */
+    .temp-strip {
+      height: 5px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #93c5fd 0%, #fcd34d 55%, #f97316 100%);
+      margin-top: 10px;
+    }
+    .temp-range-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* Rain bar */
+    .rain-track {
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .rain-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 2px 9px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── AI Summary ──────────────────────────────────── */
+    .ai-banner {
+      background: linear-gradient(130deg, #1e1b4b 0%, #312e81 50%, #1e3a8a 100%);
+      border-radius: var(--r);
+      padding: 1.75rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-banner::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(129,140,248,0.25) 0%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .ai-banner-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(165,180,252,0.9);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .ai-banner-text {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.9);
+      font-style: italic;
+    }
+    .ai-open-quote {
+      font-family: Georgia, serif;
+      font-size: 3rem;
+      line-height: 0.8;
+      color: rgba(129,140,248,0.5);
+      margin-right: 6px;
+      vertical-align: -0.25em;
+    }
+
+    /* ── Section panel ───────────────────────────────── */
+    .panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      height: 100%;
+    }
+    .panel-head {
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .panel-body { padding: 1.25rem 1.4rem; }
+
+    /* ── Packing list ─────────────────────────────────── */
+    .packing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    @media (max-width: 480px) { .packing-grid { grid-template-columns: 1fr; } }
+    .pack-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.7rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: #334155;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .pack-chip:hover { border-color: #93c5fd; background: #eff6ff; }
+    .pack-chip-icon { font-size: 1rem; flex-shrink: 0; }
+
+    /* ── Forecast timeline ───────────────────────────── */
+    .forecast-row {
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .fc-day {
+      flex-shrink: 0;
+      min-width: 100px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 0.7rem;
+      text-align: center;
+      background: var(--surface-2);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .fc-day:hover { border-color: #93c5fd; background: #eff6ff; }
+    .fc-date  { font-size: 0.68rem; font-weight: 700; color: var(--blue); }
+    .fc-emoji { font-size: 1.55rem; margin: 5px 0; }
+    .fc-high  { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .fc-low   { font-size: 0.78rem; color: var(--muted); }
+    .fc-rain  {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 999px;
+      padding: 1px 7px;
+    }
+
+    /* ── Reset button ─────────────────────────────────── */
+    .btn-reset {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-reset:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: #eff6ff;
+    }
+
+    /* ── Footer ──────────────────────────────────────── */
+    .app-footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.35);
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.78rem;
+    }
+    .app-footer strong { color: rgba(255,255,255,0.65); }
+
+    /* ── Spinner ─────────────────────────────────────── */
+    .spin {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: rotate 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes rotate { to { transform: rotate(360deg); } }
+
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body x-data="weatherAdvisor()" x-cloak>
+
+  <!-- ── Navbar ─────────────────────────────────────────────────────── -->
+  <nav class="app-nav">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="#" class="nav-brand">
+        <i class="bi bi-cloud-sun-fill" style="color:var(--sky);font-size:1.3rem;"></i>
+        WeatherAI <span class="brand-dot">Travel Advisor</span>
+      </a>
+      <span class="nav-chip">Powered by WeatherAI</span>
+    </div>
+  </nav>
+
+  <!-- ── Hero ───────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-glow-1"></div>
+    <div class="hero-glow-2"></div>
+    <div class="hero-glow-3"></div>
+
+    <div class="container position-relative">
+      <div class="row justify-content-center align-items-center g-5">
+
+        <!-- Copy -->
+        <div class="col-lg-5 text-center text-lg-start">
+          <div class="hero-eyebrow">
+            <i class="bi bi-stars"></i> AI-Powered Forecast
+          </div>
+          <h1 class="hero-title">
+            Travel smart.<br>
+            Pack <em>right</em>.
+          </h1>
+          <p class="hero-sub" style="margin:0;">
+            Enter your destination and dates — WeatherAI analyses the forecast
+            and tells you exactly what to expect and what to bring.
+          </p>
+        </div>
+
+        <!-- Form card -->
+        <div class="col-lg-5">
+          <div class="form-card">
+            <div class="form-card-header">
+              <i class="bi bi-search"></i> Plan your trip
+            </div>
+            <div class="form-card-body">
+
+              <form @submit.prevent="submit" novalidate>
+
+                <div class="mb-3">
+                  <label class="field-label">
+                    <i class="bi bi-geo-alt me-1"></i>Destination City
+                  </label>
+                  <input
+                    type="text"
+                    class="field-input"
+                    placeholder="e.g. Nairobi, Paris, Tokyo, New York"
+                    x-model.trim="city"
+                    autocomplete="off"
+                    required
+                  />
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="field-label">
+                      <i class="bi bi-airplane-engines me-1"></i>Departure
+                    </label>
+                    <input
+                      type="date"
+                      class="field-input"
+                      x-model="startDate"
+                      :min="today"
+                      required
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="field-label">
+                      <i class="bi bi-house-check me-1"></i>Return
+                    </label>
+                    <input
+                      type="date"
+                      class="field-input"
+                      x-model="endDate"
+                      :min="startDate || today"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- Error -->
+                <div x-show="error" class="error-pill mb-3">
+                  <i class="bi bi-exclamation-circle-fill mt-1 flex-shrink-0"></i>
+                  <span x-text="error"></span>
+                </div>
+
+                <button type="submit" class="btn-forecast" :disabled="loading">
+                  <template x-if="!loading">
+                    <span class="d-flex align-items-center gap-2">
+                      <i class="bi bi-lightning-charge-fill"></i>
+                      Get AI Forecast
+                    </span>
+                  </template>
+                  <template x-if="loading">
+                    <span class="d-flex align-items-center gap-2">
+                      <span class="spin"></span>
+                      Analysing weather…
+                    </span>
+                  </template>
+                </button>
+
+              </form>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Results ─────────────────────────────────────────────────────── -->
+  <div id="results" class="results-wrap" x-show="results" x-transition.duration.400ms>
+    <div class="container" x-show="results">
+
+      <!-- Destination header -->
+      <div class="dest-header text-center">
+        <div class="dest-city">
+          <i class="bi bi-geo-alt-fill me-1" style="color:var(--blue);font-size:1.6rem;"></i>
+          <span x-text="results && results.city"></span>
+        </div>
+        <div class="dest-meta my-2">
+          <i class="bi bi-calendar3"></i>
+          <span x-text="results && (results.start_date + ' – ' + results.end_date)"></span>
+          <span style="opacity:0.4;">·</span>
+          <span x-text="results && results.duration"></span> day<span x-show="results && results.duration !== 1">s</span>
+        </div>
+        <div class="dest-location" x-text="results && results.location"></div>
+      </div>
+
+      <!-- Metric cards -->
+      <div class="row g-3 mb-4">
+
+        <!-- Temperature -->
+        <div class="col-md-4">
+          <div class="metric-card">
+            <div class="d-flex align-items-center gap-3">
+              <div class="metric-icon-wrap" style="background:#fff7ed;">
+                <i class="bi bi-thermometer-half" style="color:#f97316;"></i>
+              </div>
+              <div class="flex-grow-1 min-w-0">
+                <div class="metric-label">Temperature</div>
+                <div class="metric-value">
+                  <template x-if="results && results.temp_min !== null && results.temp_max !== null">
+                    <span>
+                      <span x-text="results.temp_min"></span>°
+                      <span style="color:#d1d5db;font-weight:400;">–</span>
+                      <span x-text="results.temp_max"></span>°C
+                    </span>
+                  </template>
+                  <template x-if="!results || results.temp_min === null">
+                    <span style="font-size:1rem;color:#94a3b8;">Unavailable</span>
+                  </template>
+                </div>
+              </div>
+            </div>
+            <div class="temp-strip"></div>
+            <div class="temp-range-labels">
+              <span>Min <span x-text="results && results.temp_min !== null ? results.temp_min + '°C' : '—'"></span></span>
+              <span>Max <span x-text="results && results.temp_max !== null ? results.temp_max + '°C' : '—'"></span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rain -->
+        <div class="col-md-4">
+          <div class="metric-card">
+            <div class="d-flex align-items-center gap-3">
+              <div class="metric-icon-wrap" style="background:#e0f2fe;">
+                <i class="bi bi-cloud-rain" style="color:#0284c7;"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="metric-label">Rain Probability</div>
+                <div class="metric-value d-flex align-items-center gap-2">
+                  <span x-text="results && results.rain_probability + '%'"></span>
+                  <span
+                    class="status-badge"
+                    :class="{
+                      'bg-success bg-opacity-10 text-success': results && results.rain_label === 'Low',
+                      'bg-warning bg-opacity-10 text-warning': results && results.rain_label === 'Moderate',
+                      'bg-danger  bg-opacity-10 text-danger':  results && results.rain_label === 'High'
+                    }"
+                    x-text="results && results.rain_label"
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="rain-track">
+              <div
+                class="rain-fill"
+                :class="{
+                  'bg-success': results && results.rain_label === 'Low',
+                  'bg-warning':  results && results.rain_label === 'Moderate',
+                  'bg-danger':   results && results.rain_label === 'High'
+                }"
+                :style="results ? 'width:' + results.rain_probability + '%' : 'width:0'"
+              ></div>
+            </div>
+            <div class="metric-sub" x-text="results && results.rain_label === 'High' ? 'Bring rain gear' : results && results.rain_label === 'Moderate' ? 'Pack an umbrella' : 'Mostly dry conditions'"></div>
+          </div>
+        </div>
+
+        <!-- Trip window -->
+        <div class="col-md-4">
+          <div class="metric-card h-100 d-flex flex-column justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="metric-icon-wrap" style="background:#f0fdf4;">
+                <i class="bi bi-suitcase-lg" style="color:#16a34a;"></i>
+              </div>
+              <div>
+                <div class="metric-label">Your Trip</div>
+                <div class="metric-value" style="font-size:1.1rem;" x-text="results && (results.start_date + ' – ' + results.end_date)"></div>
+              </div>
+            </div>
+            <div class="mt-3 d-flex flex-column gap-1" style="font-size:0.78rem;color:var(--muted);">
+              <span><i class="bi bi-calendar-week me-1 text-primary"></i>
+                <span x-text="results && results.duration"></span>-day forecast window
+              </span>
+              <span><i class="bi bi-shield-check me-1 text-success"></i>
+                AI-verified weather data
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- AI Summary -->
+      <div class="ai-banner mb-4">
+        <div class="ai-banner-label">
+          <i class="bi bi-stars"></i> WeatherAI Summary
+        </div>
+        <div class="ai-banner-text">
+          <span class="ai-open-quote">&ldquo;</span><span x-text="results && results.ai_summary"></span>
+        </div>
+      </div>
+
+      <!-- Packing + Forecast -->
+      <div class="row g-3 mb-4">
+
+        <!-- Packing checklist -->
+        <div class="col-lg-6">
+          <div class="panel">
+            <div class="panel-head">
+              <i class="bi bi-bag-check-fill" style="color:var(--blue);"></i>
+              Packing Checklist
+            </div>
+            <div class="panel-body">
+              <div class="packing-grid">
+                <template x-for="item in (results ? results.packing_list : [])" :key="item">
+                  <div class="pack-chip">
+                    <span class="pack-chip-icon" x-text="packingIcon(item)"></span>
+                    <span x-text="item"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Day-by-day forecast -->
+        <div class="col-lg-6" x-show="results && results.daily_forecast && results.daily_forecast.length">
+          <div class="panel">
+            <div class="panel-head">
+              <i class="bi bi-calendar3" style="color:var(--blue);"></i>
+              Day-by-Day Forecast
+            </div>
+            <div class="panel-body">
+              <div class="forecast-row">
+                <template x-for="(day, i) in (results ? results.daily_forecast : [])" :key="i">
+                  <div class="fc-day">
+                    <div class="fc-date" x-text="day.date"></div>
+                    <div class="fc-emoji" x-text="weatherEmoji(day.condition)"></div>
+                    <template x-if="day.temp_max !== null">
+                      <div class="fc-high" x-text="day.temp_max + '°C'"></div>
+                    </template>
+                    <template x-if="day.temp_min !== null">
+                      <div class="fc-low" x-text="day.temp_min + '°C'"></div>
+                    </template>
+                    <template x-if="day.rain !== null">
+                      <div class="fc-rain">💧 <span x-text="day.rain + '%'"></span></div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Reset -->
+      <div class="text-center">
+        <button
+          class="btn-reset"
+          @click="results = null; error = null; window.scrollTo({top:0, behavior:'smooth'})"
+        >
+          <i class="bi bi-arrow-repeat"></i> Plan Another Trip
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Footer ──────────────────────────────────────────────────────── -->
+  <footer class="app-footer">
+    Built with <i class="bi bi-heart-fill" style="color:#f87171;"></i> using
+    <strong>WeatherAI API</strong> &middot; Django &middot; Alpine.js &middot; Bootstrap 5
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+  {% csrf_token %}
+
+  <script>
+    function weatherAdvisor() {
+      return {
+        city:      '',
+        startDate: '',
+        endDate:   '',
+        loading:   false,
+        results:   null,
+        error:     null,
+
+        get today() {
+          return new Date().toISOString().split('T')[0];
+        },
+
+        async submit() {
+          this.error = null;
+
+          if (!this.city) {
+            this.error = 'Please enter a destination city.'; return;
+          }
+          if (!this.startDate || !this.endDate) {
+            this.error = 'Please select both your departure and return dates.'; return;
+          }
+          if (this.startDate > this.endDate) {
+            this.error = 'Departure date must be on or before the return date.'; return;
+          }
+
+          this.loading = true;
+          this.results = null;
+
+          try {
+            const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+            const resp = await fetch('/api/weather/', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+              body:    JSON.stringify({
+                city: this.city, start_date: this.startDate, end_date: this.endDate,
+              }),
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok) {
+              this.results = data;
+              this.$nextTick(() => {
+                document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              });
+            } else {
+              this.error = data.error || 'An unexpected error occurred. Please try again.';
+            }
+          } catch {
+            this.error = 'Network error — please check your connection and try again.';
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        packingIcon(item) {
+          const s = (item || '').toLowerCase();
+          if (s.includes('coat') || s.includes('jacket') || s.includes('windbreaker')) return '🧥';
+          if (s.includes('umbrella'))                                  return '☂️';
+          if (s.includes('sunscreen') || s.includes('spf'))           return '🧴';
+          if (s.includes('sunglasses'))                                return '🕶️';
+          if (s.includes('hat') || s.includes('cap') || s.includes('brim')) return '🧢';
+          if (s.includes('gloves'))                                    return '🧤';
+          if (s.includes('scarf'))                                     return '🧣';
+          if (s.includes('boots') || s.includes('shoes'))             return '👟';
+          if (s.includes('sweater') || s.includes('fleece') || s.includes('thermal')) return '🧶';
+          if (s.includes('towel'))                                     return '🏖️';
+          if (s.includes('power bank') || s.includes('charger'))      return '🔋';
+          if (s.includes('first-aid') || s.includes('medical'))       return '🩺';
+          if (s.includes('breathable') || s.includes('quick-dry') || s.includes('shirt')) return '👕';
+          return '✓';
+        },
+
+        weatherEmoji(condition) {
+          if (!condition) return '🌤️';
+          const c = condition.toLowerCase();
+          if (c.includes('thunder') || c.includes('storm'))                        return '⛈️';
+          if (c.includes('drizzle') || c.includes('shower'))                       return '🌦️';
+          if (c.includes('rain') || c.includes('wet'))                             return '🌧️';
+          if (c.includes('snow') || c.includes('blizzard') || c.includes('sleet')) return '❄️';
+          if (c.includes('fog') || c.includes('mist') || c.includes('haze'))       return '🌫️';
+          if (c.includes('overcast') || c.includes('cloudy'))                      return '☁️';
+          if (c.includes('partly') || c.includes('scattered'))                     return '⛅';
+          if (c.includes('clear') || c.includes('sunny') || c.includes('sun'))     return '☀️';
+          if (c.includes('wind'))                                                   return '🌬️';
+          return '🌤️';
+        },
+      };
+    }
+  </script>
+</body>
+</html>
