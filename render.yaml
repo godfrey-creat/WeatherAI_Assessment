@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: weatherai-travel-advisor
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn weather_advisor.wsgi:application --workers 2 --timeout 60"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: weather_advisor.settings
+      - key: SECRET_KEY
+        generateValue: true          # Render auto-generates a secure random value
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: WEATHERAI_API_KEY
+        sync: false                  # You enter this manually in the Render dashboard
+    autoDeploy: true
